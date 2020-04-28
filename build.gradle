@@ -25,11 +25,12 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
-/* Task for running the main class with graal runtime compiler (if enabled). */
+/* Task for running the main class with Graal runtime compiler (if enabled). */
 task run(type: JavaExec) {
     main = 'com.mycompany.app.App'
     classpath = sourceSets.main.runtimeClasspath
-    if (System.getProperty("graal", "on") == "on") {    // When Graal is enabled, setup runtime compiler
+    // Check that Graal is enabled and that we are running on JDK 11 or higher
+    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
         jvmArgs '-XX:+UnlockExperimentalVMOptions',
                 '-XX:+EnableJVMCI',
                 "--module-path=$compilerDir",
