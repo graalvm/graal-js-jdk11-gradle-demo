@@ -25,16 +25,31 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
+/* Prepare JVM argumetns for running with Graal if enabled */
+Iterable<String> graalJvmArgs() {
+    // Check that Graal is enabled and that we are running on JDK 11 or higher
+    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
+        return ['-XX:+UnlockExperimentalVMOptions',
+                '-XX:+EnableJVMCI',
+                "--module-path=$compilerDir",
+                "--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar"]
+    } else {
+        return []
+    }
+}
+
 /* Task for running the main class with Graal runtime compiler (if enabled). */
 task run(type: JavaExec) {
     main = 'com.mycompany.app.App'
     classpath = sourceSets.main.runtimeClasspath
-    // Check that Graal is enabled and that we are running on JDK 11 or higher
-    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
-        jvmArgs '-XX:+UnlockExperimentalVMOptions',
-                '-XX:+EnableJVMCI',
-                "--module-path=$compilerDir",
-                "--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar"
+    jvmArgs graalJvmArgs()
+}
+
+test {
+    jvmArgs graalJvmArgs()
+    testLogging {
+        // uncomment to print all output from tests
+        // events "passed", "skipped", "failed", "standardError", "standardOut"
     }
 }
 
@@ -46,3 +61,4 @@ task copyGraalCompiler(type: Copy) {
 
 /* Make sure compiler is available when running the application. */
 run.dependsOn(copyGraalCompiler)
+test.dependsOn(copyGraalCompiler)
