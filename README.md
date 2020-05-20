@@ -14,7 +14,7 @@ Java application which compares performance of GraalJS and Nashorn.
 
 - Clone this repository
 ```
-git clone https://github.com/daemontus/graal-js-jdk11-gradle-demo.git
+git clone https://github.com/graalvm/graal-js-jdk11-gradle-demo.git
 ```
 
 - Move to the newly cloned directory
