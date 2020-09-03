@@ -1,17 +1,21 @@
 plugins {
     id 'java'
+    id 'application'
+    id "org.graalvm.plugin.compiler" version "0.1.0-alpha2"
 }
 
 repositories {
     mavenCentral()      // default repository for fetching dependencies
 }
 
-ext.graalVersion = "20.0.0"             // Graal version used in this project
-ext.compilerDir = "$buildDir/compiler"  // stores the runtime compiler jar files
+ext.graalVersion = '20.2.0'
 
-configurations {
-    // Separate configuration for Graal runtime compiler so that we don't pollute the main class path with dependencies.
-    graalCompiler
+graal {
+    version "$graalVersion"
+}
+
+application {
+    mainClassName 'com.mycompany.app.App'
 }
 
 dependencies {
@@ -20,45 +24,5 @@ dependencies {
     // necessary to integrate with legacy ScriptEngine based implementation
     implementation "org.graalvm.js:js-scriptengine:$graalVersion"
 
-    graalCompiler "org.graalvm.compiler:compiler:$graalVersion"
-
     testImplementation 'junit:junit:4.12'
 }
-
-/* Prepare JVM argumetns for running with Graal if enabled */
-Iterable<String> graalJvmArgs() {
-    // Check that Graal is enabled and that we are running on JDK 11 or higher
-    if (System.getProperty("graal", "on") == "on" && JavaVersion.current() >= JavaVersion.VERSION_11) {
-        return ['-XX:+UnlockExperimentalVMOptions',
-                '-XX:+EnableJVMCI',
-                "--module-path=$compilerDir",
-                "--upgrade-module-path=$compilerDir/compiler-${graalVersion}.jar"]
-    } else {
-        return []
-    }
-}
-
-/* Task for running the main class with Graal runtime compiler (if enabled). */
-task run(type: JavaExec) {
-    main = 'com.mycompany.app.App'
-    classpath = sourceSets.main.runtimeClasspath
-    jvmArgs graalJvmArgs()
-}
-
-test {
-    jvmArgs graalJvmArgs()
-    testLogging {
-        // uncomment to print all output from tests
-        // events "passed", "skipped", "failed", "standardError", "standardOut"
-    }
-}
-
-/* Copy Graal runtime compiler .jar files to $compilerDir. */
-task copyGraalCompiler(type: Copy) {
-    into compilerDir
-    from configurations.getByName('graalCompiler').files
-}
-
-/* Make sure compiler is available when running the application. */
-run.dependsOn(copyGraalCompiler)
-test.dependsOn(copyGraalCompiler)
